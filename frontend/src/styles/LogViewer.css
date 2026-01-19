@@ -1,0 +1,176 @@
+.log-viewer {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.log-viewer.empty {
+  padding: 40px;
+  text-align: center;
+  color: #999;
+}
+
+.log-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px;
+  background: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.tab-button {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  background: white;
+  color: #666;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.tab-button:hover {
+  background: #f3f4f6;
+  color: #333;
+}
+
+.tab-button.active {
+  color: white;
+  background: #6b7280;
+  border-color: #6b7280;
+}
+
+.tab-button.tab-updated.active {
+  background: #10b981;
+  border-color: #10b981;
+}
+
+.tab-button.tab-uptodate.active {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+}
+
+.tab-button.tab-failed.active {
+  background: #ef4444;
+  border-color: #ef4444;
+}
+
+.log-content {
+  overflow-x: auto;
+}
+
+.empty-tab {
+  padding: 60px 20px;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+}
+
+.log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.log-table thead {
+  background: #f3f4f6;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.log-table th {
+  padding: 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+.log-table tbody tr {
+  border-bottom: 1px solid #e5e7eb;
+  transition: background 0.2s ease;
+}
+
+.log-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.log-table td {
+  padding: 12px;
+}
+
+.mod-name {
+  font-weight: 600;
+  color: #333;
+}
+
+.status {
+  text-align: center;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.badge-updated {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.badge-upToDate {
+  background: #ddd6fe;
+  color: #3730a3;
+}
+
+.badge-failed {
+  background: #fee2e2;
+  color: #7f1d1d;
+}
+
+.error {
+  color: #dc2626;
+  font-size: 13px;
+  font-family: "Courier New", monospace;
+}
+
+.log-row.log-updated td:first-child {
+  color: #10b981;
+}
+
+.log-row.log-failed td:first-child {
+  color: #ef4444;
+}
+
+@media (max-width: 768px) {
+  .log-table {
+    font-size: 12px;
+  }
+
+  .log-table th,
+  .log-table td {
+    padding: 8px;
+  }
+
+  .log-table th {
+    font-size: 11px;
+  }
+
+  /* Hide less important columns on mobile */
+  .log-table td:nth-child(3),
+  .log-table td:nth-child(4),
+  .log-table th:nth-child(3),
+  .log-table th:nth-child(4) {
+    display: none;
+  }
+}

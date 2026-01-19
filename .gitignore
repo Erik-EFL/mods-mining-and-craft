@@ -1,0 +1,14 @@
+node_modules
+package-lock.json
+dist
+.env
+
+./backend/node_modules
+./backend/.env
+./backend/dist
+./backend/package-lock.json
+
+./frontend/node_modules
+./frontend/.env
+./frontend/dist
+./frontend/package-lock.json

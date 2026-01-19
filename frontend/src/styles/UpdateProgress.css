@@ -1,0 +1,127 @@
+.update-progress {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.progress-header {
+  margin-bottom: 25px;
+}
+
+.progress-header h3 {
+  font-size: 22px;
+  color: #1f2937;
+  margin: 0;
+  font-weight: 600;
+}
+
+.progress-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.stat-item {
+  background: white;
+  padding: 0;
+  border-radius: 0;
+  border-left: 4px solid #ccc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-left: 15px;
+}
+
+.stat-item.stat-checked {
+  border-left-color: #3b82f6;
+}
+
+.stat-item.stat-updated {
+  border-left-color: #10b981;
+}
+
+.stat-item.stat-uptodate {
+  border-left-color: #8b5cf6;
+}
+
+.stat-item.stat-failed {
+  border-left-color: #ef4444;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.stat-value {
+  font-size: 36px;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1;
+}
+
+.progress-bar-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: #10b981;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.progress-percentage {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+  text-align: right;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .progress-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+
+  .stat-value {
+    font-size: 28px;
+  }
+
+  .update-progress {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .progress-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat-label {
+    font-size: 10px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+  }
+}
