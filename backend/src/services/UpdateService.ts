@@ -1,4 +1,5 @@
 import { exec } from 'child_process';
+import * as path from 'path';
 import { promisify } from 'util';
 import { CurseForgeAPI } from '../apis/CurseForgeAPI';
 import { ModrinthAPI } from '../apis/ModrinthAPI';
@@ -177,8 +178,25 @@ export class UpdateService {
    */
   private async downloadFile(url: string, filename: string, destination: string): Promise<boolean> {
     try {
+      const fs = await import('fs');
+      const path = await import('path');
+      
       const response = await this.modrinthAPI.downloadFile(url);
-      return true;
+      const destPath = path.join(destination, filename);
+      
+      // Cria a pasta de destino se não existir
+      await fs.promises.mkdir(destination, { recursive: true });
+      
+      // Cria o stream de escrita
+      const writer = fs.createWriteStream(destPath);
+      
+      // Pipe do stream de resposta para o arquivo
+      response.pipe(writer);
+      
+      return new Promise((resolve, reject) => {
+        writer.on('finish', () => resolve(true));
+        writer.on('error', reject);
+      });
     } catch (error) {
       console.error(`Erro ao baixar ${filename}: ${error}`);
       return false;
@@ -342,9 +360,8 @@ export class UpdateService {
 
       console.log('\nIniciando treinamento automático a partir de erros...');
       try {
-        const { stdout, stderr } = await execAsync('node auto-train-with-mongodb.js', {
-          cwd: process.cwd(),
-        });
+        const scriptPath = path.join(process.cwd(), 'backend', 'auto-train-with-mongodb.js');
+        const { stdout, stderr } = await execAsync(`node "${scriptPath}"`);
 
         if (stdout) {
           console.log(stdout);

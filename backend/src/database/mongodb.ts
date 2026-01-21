@@ -12,8 +12,8 @@ export async function connectMongoDB(): Promise<typeof mongoose> {
   try {
     console.log('Conectando ao MongoDB...');
     if (!MONGODB_URI) {
-      console.error('MONGODB_URI não definida. Configure no .env ou variável de ambiente.');
-      process.exit(1);
+      console.warn('MONGODB_URI não definida. MongoDB não será usado. Continuando com fallback para arquivos JSON.');
+      return mongoose;
     }
 
     const connection = await mongoose.connect(MONGODB_URI, {
@@ -24,8 +24,9 @@ export async function connectMongoDB(): Promise<typeof mongoose> {
     console.log('Conectado ao MongoDB com sucesso!');
     return connection;
   } catch (error) {
-    console.error('Erro ao conectar ao MongoDB:', error);
-    process.exit(1);
+    console.warn('Erro ao conectar ao MongoDB:', error);
+    console.warn('Continuando sem MongoDB. Será usado fallback para arquivos JSON.');
+    return mongoose;
   }
 }
 
