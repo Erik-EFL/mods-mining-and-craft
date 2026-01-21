@@ -1,4 +1,5 @@
 import { exec } from 'child_process';
+import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
 import { CurseForgeAPI } from '../apis/CurseForgeAPI';
@@ -178,9 +179,6 @@ export class UpdateService {
    */
   private async downloadFile(url: string, filename: string, destination: string): Promise<boolean> {
     try {
-      const fs = await import('fs');
-      const path = await import('path');
-      
       const response = await this.modrinthAPI.downloadFile(url);
       const destPath = path.join(destination, filename);
       
