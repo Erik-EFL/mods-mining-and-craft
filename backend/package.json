@@ -8,7 +8,10 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "lint": "eslint src --ext .ts"
+    "lint": "eslint src --ext .ts",
+    "train:mongodb": "node auto-train-with-mongodb.js",
+    "populate-catalogue": "tsx populate-catalogue.ts",
+    "cleanup-catalogue": "tsx cleanup-catalogue.ts"
   },
   "keywords": [
     "minecraft",
@@ -18,6 +21,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.9.1",
     "@types/socket.io": "^3.0.1",
     "archiver": "^7.0.1",
     "axios": "^1.6.5",
@@ -25,6 +29,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
+    "mongoose": "^8.21.0",
     "socket.io": "^4.8.3",
     "winston": "^3.11.0"
   },
