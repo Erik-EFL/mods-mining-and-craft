@@ -11,9 +11,7 @@ import { ModCatalogueService } from './src/services/ModCatalogueService';
 
 dotenv.config();
 
-const MONGODB_URI =
-  process.env.MONGODB_URI ||
-  'mongodb://admin:modcraft2026@localhost:27017/mods-craft?authSource=admin';
+const MONGODB_URI = process.env.MONGODB_URI;
 
 const MINECRAFT_VERSION = process.env.MINECRAFT_VERSION || '1.21.1';
 const MOD_LOADER = process.env.MOD_LOADER || 'fabric';
@@ -29,6 +27,9 @@ const CURSEFORGE_LIMIT = 100; // Reduzido para teste
 async function connectMongoDB() {
   try {
     console.log('Conectando ao MongoDB...');
+    if (!MONGODB_URI) {
+      throw new Error('MONGODB_URI não definida. Configure no .env ou variável de ambiente.');
+    }
     await mongoose.connect(MONGODB_URI);
     console.log('Conectado ao MongoDB');
   } catch (error) {
