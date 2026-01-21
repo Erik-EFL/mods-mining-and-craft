@@ -1,8 +1,12 @@
-import { CurseForgeAPI } from "../apis/CurseForgeAPI";
-import { ModrinthAPI } from "../apis/ModrinthAPI";
-import type { UpdateLog, UpdateStats } from "../types/mod.types";
-import { FileService } from "./FileService";
-import { SearchService } from "./SearchService";
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { CurseForgeAPI } from '../apis/CurseForgeAPI';
+import { ModrinthAPI } from '../apis/ModrinthAPI';
+import type { UpdateLog, UpdateStats } from '../types/mod.types';
+import { FileService } from './FileService';
+import { SearchService } from './SearchService';
+
+const execAsync = promisify(exec);
 
 export interface DownloadInfo {
   url: string;
@@ -47,12 +51,7 @@ export class UpdateService {
     private modsFolder: string,
     private backupFolder: string
   ) {
-    this.searchService = new SearchService(
-      modrinthAPI,
-      curseforgeAPI,
-      minecraftVersion,
-      modLoader
-    );
+    this.searchService = new SearchService(modrinthAPI, curseforgeAPI, minecraftVersion, modLoader);
     this.fileService = new FileService(modsFolder);
   }
 
@@ -68,7 +67,7 @@ export class UpdateService {
    */
   stop() {
     this.shouldStop = true;
-    console.log("🛑 Solicitação de parada recebida");
+    console.log('Solicitação de parada recebida');
   }
 
   /**
@@ -90,7 +89,7 @@ export class UpdateService {
         const elapsed = Date.now() - this.startTime;
         const avgTimePerMod = elapsed / current;
         const remaining = total - current;
-        estimatedTimeRemaining = Math.round((avgTimePerMod * remaining) / 1000); // em segundos
+        estimatedTimeRemaining = Math.round((avgTimePerMod * remaining) / 1000);
       }
 
       this.progressCallback({
@@ -106,11 +105,8 @@ export class UpdateService {
   /**
    * Busca informações de versão baseado na fonte
    */
-  private async getLatestVersion(
-    projectId: string | number,
-    source: "modrinth" | "curseforge"
-  ) {
-    if (source === "modrinth") {
+  private async getLatestVersion(projectId: string | number, source: 'modrinth' | 'curseforge') {
+    if (source === 'modrinth') {
       const versions = await this.modrinthAPI.getVersions(
         projectId as string,
         this.minecraftVersion,
@@ -120,10 +116,9 @@ export class UpdateService {
       if (versions.length > 0) {
         const latestVersion = versions[0];
         const primaryFile =
-          latestVersion.files.find((f: any) => f.primary) ||
-          latestVersion.files[0];
+          latestVersion.files.find((f: any) => f.primary) || latestVersion.files[0];
 
-        console.log(`🔍 Modrinth Version Debug:`, {
+        console.log(`Modrinth Version Debug:`, {
           version_number: latestVersion.version_number,
           name: latestVersion.name,
           filename: primaryFile.filename,
@@ -137,7 +132,7 @@ export class UpdateService {
           size: primaryFile.size,
         };
       }
-    } else if (source === "curseforge") {
+    } else if (source === 'curseforge') {
       const files = await this.curseforgeAPI.getFiles(
         projectId as number,
         this.minecraftVersion,
@@ -146,22 +141,19 @@ export class UpdateService {
 
       if (files.length > 0) {
         const sortedFiles = files.sort(
-          (a: any, b: any) =>
-            new Date(b.fileDate).getTime() - new Date(a.fileDate).getTime()
+          (a: any, b: any) => new Date(b.fileDate).getTime() - new Date(a.fileDate).getTime()
         );
 
         const latestFile = sortedFiles[0];
 
-        console.log(`🔍 CurseForge File Debug:`, {
+        console.log(`CurseForge File Debug:`, {
           displayName: latestFile.displayName,
           fileName: latestFile.fileName,
           fileDate: latestFile.fileDate,
         });
 
-        // Extrair versão do displayName ou fileName
         let version = latestFile.displayName || latestFile.fileName;
 
-        // Tentar extrair apenas a versão (ex: "1.2.3" de "ModName 1.2.3" ou "modname-1.2.3.jar")
         const versionMatch = version.match(/(\d+\.\d+\.?\d*)/);
         if (versionMatch) {
           version = versionMatch[1];
@@ -183,14 +175,9 @@ export class UpdateService {
   /**
    * Baixa um arquivo
    */
-  private async downloadFile(
-    url: string,
-    filename: string,
-    destination: string
-  ): Promise<boolean> {
+  private async downloadFile(url: string, filename: string, destination: string): Promise<boolean> {
     try {
       const response = await this.modrinthAPI.downloadFile(url);
-      // Implementar lógica de download usando streams
       return true;
     } catch (error) {
       console.error(`Erro ao baixar ${filename}: ${error}`);
@@ -207,27 +194,22 @@ export class UpdateService {
     const modInfo = this.fileService.extractModInfo(filename);
     const normalizedName = this.searchService.normalizeName(filename);
 
-    // Buscar mod
-    const modData = await this.searchService.searchMod(normalizedName);
+    const modData = await this.searchService.searchMod(normalizedName, filename);
 
     if (!modData.found) {
       this.stats.failed++;
       this.failedLogs.push({
         filename,
-        reason: "Não encontrado em nenhuma plataforma",
+        reason: 'Não encontrado em nenhuma plataforma',
         timestamp: new Date().toISOString(),
-        status: "failed",
+        status: 'failed',
       });
       return;
     }
 
-    // Buscar versão
-    const latestVersion = await this.getLatestVersion(
-      modData.projectId!,
-      modData.source!
-    );
+    const latestVersion = await this.getLatestVersion(modData.projectId!, modData.source!);
 
-    console.log(`🔍 Debug - ${modData.title}:`);
+    console.log(`Debug - ${modData.title}:`);
     console.log(`   Source: ${modData.source}`);
     console.log(`   Latest Version:`, latestVersion);
     console.log(`   Current Version:`, modInfo.currentVersion);
@@ -239,7 +221,7 @@ export class UpdateService {
         modName: modData.title,
         reason: `Nenhuma versão para Minecraft ${this.minecraftVersion}`,
         timestamp: new Date().toISOString(),
-        status: "failed",
+        status: 'failed',
       });
       return;
     }
@@ -250,16 +232,14 @@ export class UpdateService {
       this.updatedLogs.push({
         filename,
         modName: modData.title,
-        status: "skipped",
+        status: 'skipped',
         timestamp: new Date().toISOString(),
       });
       return;
     }
 
-    // Fazer backup
     await this.fileService.backupMod(filename, this.backupFolder);
 
-    // Baixar
     const downloaded = await this.downloadFile(
       latestVersion.downloadUrl,
       latestVersion.filename,
@@ -276,16 +256,16 @@ export class UpdateService {
         newVersion: latestVersion.version,
         source: modData.source,
         timestamp: new Date().toISOString(),
-        status: "success",
+        status: 'success',
       });
     } else {
       this.stats.failed++;
       this.failedLogs.push({
         filename,
         modName: modData.title,
-        reason: "Erro ao baixar arquivo",
+        reason: 'Erro ao baixar arquivo',
         timestamp: new Date().toISOString(),
-        status: "failed",
+        status: 'failed',
       });
     }
   }
@@ -304,21 +284,19 @@ export class UpdateService {
     const mods = await this.fileService.scanMods();
     const total = mods.length;
 
-    console.log(`📦 Encontrados ${total} mods para verificar`);
+    console.log(`Encontrados ${total} mods para verificar`);
 
-    // Processar em lotes paralelos de 3 mods por vez
     const batchSize = 3;
     let current = 0;
 
     for (let i = 0; i < mods.length; i += batchSize) {
       if (!this.shouldContinue()) {
-        console.log("🛑 Processo interrompido pelo usuário");
+        console.log('Processo interrompido pelo usuário');
         break;
       }
 
       const batch = mods.slice(i, i + batchSize);
 
-      // Processar batch em paralelo
       await Promise.all(
         batch.map(async (mod) => {
           if (!this.shouldContinue()) return;
@@ -329,7 +307,6 @@ export class UpdateService {
         })
       );
 
-      // Pequeno delay entre batches para não sobrecarregar APIs
       await new Promise((resolve) => setTimeout(resolve, 500));
     }
 
@@ -350,16 +327,41 @@ export class UpdateService {
     logFile: string;
     modsCount: number;
   }> {
-    const modsCount = await this.fileService.createUpdatedModsFolder(
-      updatedModsFolder
-    );
-    const logFile = await this.fileService.createLogFile(
+    const modsCount = await this.fileService.createUpdatedModsFolder(updatedModsFolder);
+
+    const logId = await this.fileService.saveUpdateLog(
       this.stats,
       this.updatedLogs,
       this.failedLogs
     );
 
-    return { logFile, modsCount };
+    if (this.failedLogs.length > 0) {
+      console.log('\nAguardando 3 segundos antes de iniciar treinamento automático...');
+
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
+      console.log('\nIniciando treinamento automático a partir de erros...');
+      try {
+        const { stdout, stderr } = await execAsync('node auto-train-with-mongodb.js', {
+          cwd: process.cwd(),
+        });
+
+        if (stdout) {
+          console.log(stdout);
+        }
+
+        if (stderr) {
+          console.error('Avisos do treinamento:', stderr);
+        }
+
+        console.log('Treinamento automático concluído!');
+        console.log('Novos padrões foram salvos no MongoDB.');
+      } catch (error) {
+        console.error('Erro ao executar treinamento automático:', error);
+      }
+    }
+
+    return { logFile: logId, modsCount };
   }
 
   /**

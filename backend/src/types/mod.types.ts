@@ -15,6 +15,8 @@ export interface ModrinthVersion {
   name: string;
   date_published: string;
   files: ModrinthFile[];
+  game_versions?: string[];
+  loaders?: string[];
 }
 
 export interface ModrinthFile {
@@ -52,7 +54,7 @@ export interface ModDetails {
     projectId: string;
     slug: string;
     name: string;
-    category: "mod" | "datapack" | "resourcepack";
+    category: 'mod' | 'datapack' | 'resourcepack';
     description: string;
   };
   curseforge?: {
@@ -75,8 +77,8 @@ export interface UpdateLog {
   modName?: string;
   oldVersion?: string;
   newVersion?: string;
-  source?: "modrinth" | "curseforge";
+  source?: 'modrinth' | 'curseforge';
   reason?: string;
   timestamp: string;
-  status: "success" | "failed" | "skipped";
+  status: 'success' | 'failed' | 'skipped';
 }

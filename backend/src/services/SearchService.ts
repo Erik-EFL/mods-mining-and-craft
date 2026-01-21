@@ -1,16 +1,23 @@
-import { CurseForgeAPI } from "../apis/CurseForgeAPI";
-import { ModrinthAPI } from "../apis/ModrinthAPI";
+import * as fs from 'fs';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
+import { CurseForgeAPI } from '../apis/CurseForgeAPI';
+import { ModrinthAPI } from '../apis/ModrinthAPI';
 import {
   CURSEFORGE_NAME_MAPPING,
   DIRECT_PROJECT_MAPPING,
   MOD_DETAILS_DB,
   MOD_NAME_MAPPING,
   NAME_VARIATIONS,
-} from "../database/modDatabase";
+} from '../database/modDatabase';
+import { AISearchService } from './AISearchService';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export interface ModSearchResult {
   found: boolean;
-  source?: "modrinth" | "curseforge";
+  source?: 'modrinth' | 'curseforge';
   projectId?: string | number;
   slug?: string;
   title?: string;
@@ -21,12 +28,65 @@ export interface ModSearchResult {
  * Serviço de busca de mods nas duas plataformas
  */
 export class SearchService {
+  private aiSearchService: AISearchService;
+  private learnedPatterns: Map<string, string[]> = new Map();
+
   constructor(
     private modrinthAPI: ModrinthAPI,
     private curseforgeAPI: CurseForgeAPI,
     private minecraftVersion: string,
     private modLoader: string
-  ) {}
+  ) {
+    this.aiSearchService = new AISearchService(
+      modrinthAPI,
+      curseforgeAPI,
+      minecraftVersion,
+      modLoader
+    );
+
+    this.loadLearnedPatterns();
+  }
+
+  /**
+   * Carrega padrões aprendidos do arquivo search-learning.json
+   */
+  private loadLearnedPatterns(): void {
+    try {
+      const possiblePaths = [
+        path.join(process.cwd(), 'backend', 'search-learning.json'),
+        path.join(process.cwd(), 'search-learning.json'),
+        path.join(__dirname, '..', '..', 'search-learning.json'),
+      ];
+
+      let learningFile = '';
+      for (const possiblePath of possiblePaths) {
+        if (fs.existsSync(possiblePath)) {
+          learningFile = possiblePath;
+          break;
+        }
+      }
+
+      if (learningFile && fs.existsSync(learningFile)) {
+        const data = fs.readFileSync(learningFile, 'utf-8');
+        const patterns = JSON.parse(data);
+        this.learnedPatterns = new Map(Object.entries(patterns));
+        console.log(
+          `Carregados ${this.learnedPatterns.size} padrões aprendidos de: ${learningFile}`
+        );
+      } else {
+        console.log('Arquivo search-learning.json não encontrado. Execute: node smart-train.js');
+      }
+    } catch (error) {
+      console.warn('Erro ao carregar padrões aprendidos:', error);
+    }
+  }
+
+  /**
+   * Obtém sugestões aprendidas para um mod
+   */
+  private getLearnedSuggestions(modName: string): string[] {
+    return this.learnedPatterns.get(modName) || [];
+  }
 
   /**
    * Busca informações do banco de dados local
@@ -41,54 +101,49 @@ export class SearchService {
   private generateNameVariations(modName: string): string[] {
     const variations: string[] = [modName];
 
-    const withHyphens = modName
-      .replace(/([a-z])([A-Z])/g, "$1-$2")
-      .toLowerCase();
+    const withHyphens = modName.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
     if (withHyphens !== modName) variations.push(withHyphens);
 
-    const withSpaces = modName
-      .replace(/([a-z])([A-Z])/g, "$1 $2")
-      .toLowerCase();
+    const withSpaces = modName.replace(/([a-z])([A-Z])/g, '$1 $2').toLowerCase();
     if (withSpaces !== modName) variations.push(withSpaces);
 
-    // Detectar palavras conhecidas comuns em nomes de mods
     const commonWords = [
-      "sodium",
-      "iris",
-      "fabric",
-      "forge",
-      "neo",
-      "api",
-      "lib",
-      "core",
-      "entity",
-      "model",
-      "features",
-      "dynamic",
-      "better",
-      "improved",
-      "enhanced",
-      "path",
-      "blocks",
-      "shadowy",
-      "ambient",
-      "sounds",
-      "biomes",
-      "plenty",
-      "config",
-      "port",
-      "creative",
-      "apple",
-      "skin",
-      "grass",
-      "cloth",
-      "architecture",
-      "mod",
-      "menu",
-      "screen",
-      "fps",
-      "boost",
-      "performance",
+      'sodium',
+      'iris',
+      'fabric',
+      'forge',
+      'neo',
+      'api',
+      'lib',
+      'core',
+      'entity',
+      'model',
+      'features',
+      'dynamic',
+      'better',
+      'improved',
+      'enhanced',
+      'path',
+      'blocks',
+      'shadowy',
+      'ambient',
+      'sounds',
+      'biomes',
+      'plenty',
+      'config',
+      'port',
+      'creative',
+      'apple',
+      'skin',
+      'grass',
+      'cloth',
+      'architecture',
+      'mod',
+      'menu',
+      'screen',
+      'fps',
+      'boost',
+      'performance',
     ];
 
     let remaining = modName.toLowerCase();
@@ -115,19 +170,14 @@ export class SearchService {
     }
 
     if (foundWords.length > 1) {
-      variations.push(foundWords.join("-"));
-      variations.push(foundWords.join(" "));
+      variations.push(foundWords.join('-'));
+      variations.push(foundWords.join(' '));
     }
 
-    // (fabric, forge, neoforge, quilt)
-    const withoutLoader = modName
-      .replace(/(fabric|forge|neoforge|quilt)$/i, "")
-      .trim();
+    const withoutLoader = modName.replace(/(fabric|forge|neoforge|quilt)$/i, '').trim();
     if (withoutLoader && withoutLoader !== modName) {
       variations.push(withoutLoader);
-      variations.push(
-        withoutLoader.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase()
-      );
+      variations.push(withoutLoader.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase());
     }
 
     return [...new Set(variations)];
@@ -140,12 +190,10 @@ export class SearchService {
     const dbDetails = this.getModDetailsFromDB(modName);
     if (dbDetails?.modrinth?.projectId) {
       try {
-        const project = await this.modrinthAPI.getProjectById(
-          dbDetails.modrinth.projectId
-        );
+        const project = await this.modrinthAPI.getProjectById(dbDetails.modrinth.projectId);
         return {
           found: true,
-          source: "modrinth",
+          source: 'modrinth',
           projectId: project.id,
           slug: project.slug,
           title: project.title,
@@ -162,7 +210,7 @@ export class SearchService {
         const project = await this.modrinthAPI.getProjectById(projectId);
         return {
           found: true,
-          source: "modrinth",
+          source: 'modrinth',
           projectId: project.id,
           slug: project.slug,
           title: project.title,
@@ -193,7 +241,7 @@ export class SearchService {
           const mod = results[0];
           return {
             found: true,
-            source: "modrinth",
+            source: 'modrinth',
             projectId: mod.project_id,
             slug: mod.slug,
             title: mod.title,
@@ -212,16 +260,13 @@ export class SearchService {
    * Busca mod no CurseForge com fallbacks
    */
   async searchOnCurseForge(modName: string): Promise<ModSearchResult> {
-    // Primeiro verificar banco de dados
     const dbDetails = this.getModDetailsFromDB(modName);
     if (dbDetails?.curseforge?.projectId) {
       try {
-        const project = await this.curseforgeAPI.getProjectById(
-          dbDetails.curseforge.projectId
-        );
+        const project = await this.curseforgeAPI.getProjectById(dbDetails.curseforge.projectId);
         return {
           found: true,
-          source: "curseforge",
+          source: 'curseforge',
           projectId: project.id,
           slug: project.slug,
           title: project.name,
@@ -238,7 +283,7 @@ export class SearchService {
         const project = await this.curseforgeAPI.getProjectById(projectId);
         return {
           found: true,
-          source: "curseforge",
+          source: 'curseforge',
           projectId: project.id,
           slug: project.slug,
           title: project.name,
@@ -271,7 +316,7 @@ export class SearchService {
           const mod = results[0];
           return {
             found: true,
-            source: "curseforge",
+            source: 'curseforge',
             projectId: mod.id,
             slug: mod.slug,
             title: mod.name,
@@ -287,29 +332,96 @@ export class SearchService {
   }
 
   /**
-   * Busca mod em ambas as plataformas
+   * Busca mod em ambas as plataformas com fallback para IA
    */
-  async searchMod(modName: string): Promise<ModSearchResult> {
-    console.log(`🔍 Buscando mod: ${modName}`);
+  async searchMod(modName: string, filename?: string): Promise<ModSearchResult> {
+    console.log(`Buscando mod: ${modName}`);
+
+    const learnedSuggestions = this.getLearnedSuggestions(modName);
+    if (learnedSuggestions.length > 0) {
+      console.log(`Encontradas ${learnedSuggestions.length} sugestões aprendidas`);
+
+      for (const suggestion of learnedSuggestions) {
+        try {
+          const results = await this.modrinthAPI.searchMods(
+            suggestion,
+            this.minecraftVersion,
+            this.modLoader
+          );
+
+          if (results.length > 0) {
+            const mod = results[0];
+            console.log(`Encontrado no Modrinth via sugestão aprendida: ${mod.title}`);
+            return {
+              found: true,
+              source: 'modrinth',
+              projectId: mod.project_id,
+              slug: mod.slug,
+              title: mod.title,
+              description: mod.description,
+            };
+          }
+        } catch (error) {
+          continue;
+        }
+
+        try {
+          const results = await this.curseforgeAPI.searchMods(
+            suggestion,
+            this.minecraftVersion,
+            this.modLoader
+          );
+
+          if (results.length > 0) {
+            const mod = results[0];
+            console.log(`Encontrado no CurseForge via sugestão aprendida: ${mod.name}`);
+            return {
+              found: true,
+              source: 'curseforge',
+              projectId: mod.id,
+              slug: mod.slug,
+              title: mod.name,
+              description: mod.summary,
+            };
+          }
+        } catch (error) {
+          continue;
+        }
+      }
+    }
 
     const variations = this.generateNameVariations(modName);
-    console.log(`Variações: ${variations.join(", ")}`);
+    console.log(`Variações: ${variations.join(', ')}`);
 
     const modrinthResult = await this.searchOnModrinth(modName);
     if (modrinthResult.found) {
-      console.log(`✅ Encontrado no Modrinth: ${modrinthResult.title}`);
+      console.log(`Encontrado no Modrinth: ${modrinthResult.title}`);
       return modrinthResult;
     }
 
-    console.log(`⚠️ Não encontrado no Modrinth, tentando CurseForge...`);
+    console.log(`Não encontrado no Modrinth, tentando CurseForge...`);
 
     const curseforgeResult = await this.searchOnCurseForge(modName);
     if (curseforgeResult.found) {
-      console.log(`✅ Encontrado no CurseForge: ${curseforgeResult.title}`);
+      console.log(`Encontrado no CurseForge: ${curseforgeResult.title}`);
       return curseforgeResult;
     }
 
-    console.log(`❌ Mod não encontrado: ${modName}`);
+    // TERCEIRO: Fallback para IA se buscas convencionais falharem
+    if (filename) {
+      console.log(`Buscas convencionais falharam. Usando IA como fallback...`);
+      try {
+        const aiResult = await this.aiSearchService.intelligentSearch(filename, modName);
+        if (aiResult.found) {
+          console.log(`Encontrado via IA: ${aiResult.title}`);
+          return aiResult;
+        }
+      } catch (error) {
+        console.error(`Erro na busca com IA: ${error}`);
+      }
+    }
+
+    console.log(`Mod não encontrado: ${modName}`);
     return curseforgeResult;
   }
 
@@ -317,32 +429,43 @@ export class SearchService {
    * Normaliza nome do mod para busca
    */
   normalizeName(filename: string): string {
-    let name = filename.replace(".jar", "");
+    let name = filename.replace(/\.jar$/i, '');
 
-    // Remover versões comuns (v1.2.3, 1.2.3, mc1.21.1, etc)
-    name = name.replace(/[-_]?v?\d+\.\d+\.?\d*[\w\.\-]*/gi, "");
+    // 1. Remove padrão -v/-mc/-fabric/etc seguido de versão
+    //    Ex: -v21.11.0-mc1.21.11-Fabric → vira só o nome base
+    name = name.replace(/[-_](v|mc|fabric|forge|neoforge)[\d\.\w\-\+]*/gi, '');
 
-    // Remover loaders (fabric, forge, neoforge, quilt)
-    name = name.replace(/[-_]?(fabric|forge|neoforge|quilt|neo)[-_]?/gi, "");
+    // 2. Remove -build, -alpha, -beta, -kotlin
+    //    Ex: -5.25.2-build.4 → -5.25.2
+    name = name.replace(/[-_](build|alpha|beta|kotlin)[\d\.\w\-\+]*/gi, '');
 
-    // Remover versão do minecraft
-    name = name.replace(/[-_]?mc[-_]?\d+\.?\d*\.?\d*/gi, "");
-    name = name.replace(/[-_]?minecraft[-_]?\d+\.?\d*\.?\d*/gi, "");
+    // 3. Remove versão no final se começar com v/x seguido de números
+    //    Ex: -v2.5.14 → vira vazio; _v2.5.14 → vira vazio
+    name = name.replace(/[-_]?[vx]\d+[\.\d\w\-\+]*$/gi, '');
 
-    // Remover palavras comuns de sufixo
-    name = name.replace(/[-_]?(mod|api|lib|core)$/gi, "");
+    // 4. Remove versões numéricas (padrão X.Y.Z ou X.Y)
+    //    Mas preserva nomes que têm números no meio (tipo Ruins)
+    name = name.replace(/\d+[\.\d\w\-\+]*(?=[-_]|$)/g, (match) => {
+      // Se é versão com ponto (1.21, 5.25.2), remove
+      if (/^\d+\.\d+/.test(match)) {
+        return '';
+      }
+      return match;
+    });
 
-    // Remover caracteres especiais e limpar
-    let modName = name.toLowerCase().replace(/[^a-z0-9]/g, "");
+    // 5. Remover caracteres especiais, deixando apenas letras
+    //    Isso converte: panda-temple → pandatemple
+    let modName = name.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-    // Se ficou vazio, usar nome original
-    if (!modName || modName.length < 3) {
+    // 6. Fallback se ficar vazio
+    if (!modName || modName.length < 2) {
       modName = filename
-        .replace(".jar", "")
+        .replace(/\.jar$/i, '')
         .toLowerCase()
-        .replace(/[^a-z0-9]/g, "");
+        .replace(/[^a-z0-9]/g, '');
     }
 
+    // 7. Aplicar mapeamento de nomes conhecidos
     if (MOD_NAME_MAPPING[modName]) {
       modName = MOD_NAME_MAPPING[modName];
     }
