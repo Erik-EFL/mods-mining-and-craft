@@ -1,5 +1,7 @@
 import { exec } from 'child_process';
+import * as path from 'path';
 import { promisify } from 'util';
+import { fileURLToPath } from 'url';
 import { CurseForgeAPI } from '../apis/CurseForgeAPI';
 import { ModrinthAPI } from '../apis/ModrinthAPI';
 import type { UpdateLog, UpdateStats } from '../types/mod.types';
@@ -7,6 +9,8 @@ import { FileService } from './FileService';
 import { SearchService } from './SearchService';
 
 const execAsync = promisify(exec);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export interface DownloadInfo {
   url: string;
@@ -342,9 +346,8 @@ export class UpdateService {
 
       console.log('\nIniciando treinamento automático a partir de erros...');
       try {
-        const { stdout, stderr } = await execAsync('node auto-train-with-mongodb.js', {
-          cwd: process.cwd(),
-        });
+        const scriptPath = path.join(__dirname, '..', '..', 'auto-train-with-mongodb.js');
+        const { stdout, stderr } = await execAsync(`node "${scriptPath}"`);
 
         if (stdout) {
           console.log(stdout);
