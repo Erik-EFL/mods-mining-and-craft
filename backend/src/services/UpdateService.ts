@@ -1,5 +1,7 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import * as fs from 'fs';
+import * as path from 'path';
 import { CurseForgeAPI } from '../apis/CurseForgeAPI';
 import { ModrinthAPI } from '../apis/ModrinthAPI';
 import type { UpdateLog, UpdateStats } from '../types/mod.types';
@@ -177,8 +179,30 @@ export class UpdateService {
    */
   private async downloadFile(url: string, filename: string, destination: string): Promise<boolean> {
     try {
-      const response = await this.modrinthAPI.downloadFile(url);
-      return true;
+      const stream = await this.modrinthAPI.downloadFile(url);
+      const filePath = path.join(destination, filename);
+      
+      // Create write stream to save the file
+      const writer = fs.createWriteStream(filePath);
+      
+      // Pipe the response stream to the file
+      stream.pipe(writer);
+      
+      // Return a promise that resolves when the file is fully written
+      return new Promise((resolve, reject) => {
+        writer.on('finish', () => {
+          console.log(`Arquivo ${filename} baixado com sucesso em ${filePath}`);
+          resolve(true);
+        });
+        writer.on('error', (error: Error) => {
+          console.error(`Erro ao escrever arquivo ${filename}: ${error}`);
+          reject(error);
+        });
+        stream.on('error', (error: Error) => {
+          console.error(`Erro no stream de download ${filename}: ${error}`);
+          reject(error);
+        });
+      });
     } catch (error) {
       console.error(`Erro ao baixar ${filename}: ${error}`);
       return false;
