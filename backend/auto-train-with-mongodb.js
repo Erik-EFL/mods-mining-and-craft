@@ -3,16 +3,17 @@
  * Integra aprendizado com banco de dados para análise posterior
  */
 
+import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+dotenv.config();
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const MONGODB_URI =
-  process.env.MONGODB_URI ||
-  'mongodb://admin:modcraft2026@localhost:27017/mods-craft?authSource=admin';
+const MONGODB_URI = process.env.MONGODB_URI;
 const MAX_SUGGESTIONS_PER_MOD = 5;
 
 let TrainingSession;
@@ -25,6 +26,9 @@ let UpdateLog;
 async function connectMongoDB() {
   try {
     console.log('Conectando ao MongoDB...');
+    if (!MONGODB_URI) {
+      throw new Error('MONGODB_URI não definida. Configure no .env ou variável de ambiente.');
+    }
     await mongoose.connect(MONGODB_URI);
     console.log('Conectado ao MongoDB');
 
