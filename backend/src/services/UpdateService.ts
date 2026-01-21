@@ -13,7 +13,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Path to the auto-training script relative to this service file
-const AUTO_TRAIN_SCRIPT_PATH = path.join(__dirname, '..', '..', 'auto-train-with-mongodb.js');
+const AUTO_TRAIN_SCRIPT_PATH = path.resolve(__dirname, '../../auto-train-with-mongodb.js');
 
 export interface DownloadInfo {
   url: string;
@@ -349,7 +349,10 @@ export class UpdateService {
 
       console.log('\nIniciando treinamento automático a partir de erros...');
       try {
-        const { stdout, stderr } = await execFileAsync('node', [AUTO_TRAIN_SCRIPT_PATH]);
+        const { stdout, stderr } = await execFileAsync('node', [AUTO_TRAIN_SCRIPT_PATH], {
+          timeout: 300000, // 5 minutes timeout
+          maxBuffer: 1024 * 1024 * 10, // 10MB buffer
+        });
 
         if (stdout) {
           console.log(stdout);
