@@ -1,6 +1,7 @@
-import { promises as fs } from "fs";
-import path from "path";
-import type { UpdateLog, UpdateStats } from "../types/mod.types";
+import { promises as fs } from 'fs';
+import path from 'path';
+import type { UpdateLog, UpdateStats } from '../types/mod.types';
+import { DatabaseService } from './DatabaseService';
 
 /**
  * Serviço para buscar e extrair informações de arquivos de mods
@@ -14,7 +15,7 @@ export class FileService {
   async scanMods(): Promise<string[]> {
     try {
       const files = await fs.readdir(this.modsFolder);
-      return files.filter((file) => file.endsWith(".jar"));
+      return files.filter((file) => file.endsWith('.jar'));
     } catch (error) {
       throw new Error(`Erro ao escanear pasta de mods: ${error}`);
     }
@@ -28,7 +29,7 @@ export class FileService {
     filename: string;
     currentVersion: string;
   } {
-    const name = filename.replace(".jar", "");
+    const name = filename.replace('.jar', '');
 
     const patterns = [
       /^(.+?)[-_](?:fabric|forge|neoforge)[-_](?:mc)?(.+?)[-_](.+)$/i,
@@ -40,7 +41,7 @@ export class FileService {
       const match = name.match(pattern);
       if (match) {
         return {
-          name: match[1].toLowerCase().replace(/[^a-z0-9]/g, ""),
+          name: match[1].toLowerCase().replace(/[^a-z0-9]/g, ''),
           filename: filename,
           currentVersion: match[match.length - 1],
         };
@@ -48,9 +49,9 @@ export class FileService {
     }
 
     return {
-      name: name.toLowerCase().replace(/[^a-z0-9]/g, ""),
+      name: name.toLowerCase().replace(/[^a-z0-9]/g, ''),
       filename: filename,
-      currentVersion: "unknown",
+      currentVersion: 'unknown',
     };
   }
 
@@ -93,7 +94,7 @@ export class FileService {
       }
 
       const currentMods = await fs.readdir(this.modsFolder);
-      const jarFiles = currentMods.filter((file) => file.endsWith(".jar"));
+      const jarFiles = currentMods.filter((file) => file.endsWith('.jar'));
 
       for (const modFile of jarFiles) {
         const sourcePath = path.join(this.modsFolder, modFile);
@@ -108,65 +109,46 @@ export class FileService {
   }
 
   /**
-   * Cria arquivo de log de atualização
+   * Salva log de atualização no MongoDB
    */
-  async createLogFile(
+  async saveUpdateLog(
     stats: UpdateStats,
     updatedMods: UpdateLog[],
     failedMods: UpdateLog[]
   ): Promise<string> {
     try {
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const logFileName = `update-log-${timestamp}.txt`;
-      const logFilePath = path.join(".", logFileName);
-
-      let logContent = "";
-      logContent += "=".repeat(80) + "\n";
-      logContent += "RELATÓRIO DE ATUALIZAÇÃO DE MODS\n";
-      logContent += "=".repeat(80) + "\n\n";
-      logContent += `Data: ${new Date().toLocaleString("pt-BR")}\n\n`;
-
-      logContent += "-".repeat(80) + "\n";
-      logContent += "ESTATÍSTICAS\n";
-      logContent += "-".repeat(80) + "\n";
-      logContent += `Total verificado: ${stats.checked}\n`;
-      logContent += `Atualizados: ${stats.updated}\n`;
-      logContent += `Já atualizados: ${stats.upToDate}\n`;
-      logContent += `Falhas: ${stats.failed}\n\n`;
-
-      if (updatedMods.length > 0) {
-        logContent += "=".repeat(80) + "\n";
-        logContent += `MODS ATUALIZADOS (${updatedMods.length})\n`;
-        logContent += "=".repeat(80) + "\n\n";
-
-        updatedMods.forEach((mod, index) => {
-          logContent += `${index + 1}. ${mod.modName}\n`;
-          logContent += `   Fonte: ${mod.source?.toUpperCase()}\n`;
-          logContent += `   Versão: ${mod.oldVersion} → ${mod.newVersion}\n`;
-          logContent += `   Data: ${new Date(mod.timestamp).toLocaleString(
-            "pt-BR"
-          )}\n\n`;
-        });
-      }
-
-      if (failedMods.length > 0) {
-        logContent += "=".repeat(80) + "\n";
-        logContent += `MODS QUE FALHARAM (${failedMods.length})\n`;
-        logContent += "=".repeat(80) + "\n\n";
-
-        failedMods.forEach((mod, index) => {
-          logContent += `${index + 1}. ${mod.modName || mod.filename}\n`;
-          logContent += `   Motivo: ${mod.reason}\n`;
-          logContent += `   Data: ${new Date(mod.timestamp).toLocaleString(
-            "pt-BR"
-          )}\n\n`;
-        });
-      }
-
-      await fs.writeFile(logFilePath, logContent, "utf-8");
-      return logFileName;
+      const logId = await DatabaseService.saveUpdateLog(stats, updatedMods, failedMods);
+      console.log(`Log salvo no MongoDB: ${logId}`);
+      return logId;
     } catch (error) {
-      throw new Error(`Erro ao criar arquivo de log: ${error}`);
+      throw new Error(`Erro ao salvar log no MongoDB: ${error}`);
     }
+  }
+
+  /**
+   * Normaliza nome do mod (usado no snapshot)
+   */
+  private normalizeModName(filename: string): string {
+    let name = filename.replace(/\.jar$/i, '');
+
+    // 1. Remove padrão -v/-mc/-fabric/etc seguido de versão
+    name = name.replace(/[-_](v|mc|fabric|forge|neoforge)[\d\.\w\-\+]*/gi, '');
+
+    // 2. Remove -build, -alpha, -beta, -kotlin
+    name = name.replace(/[-_](build|alpha|beta|kotlin)[\d\.\w\-\+]*/gi, '');
+
+    // 3. Remove versão no final se começar com v/x seguido de números
+    name = name.replace(/[-_]?[vx]\d+[\.\d\w\-\+]*$/gi, '');
+
+    // 4. Remove versões numéricas (padrão X.Y.Z ou X.Y)
+    name = name.replace(/\d+[\.\d\w\-\+]*(?=[-_]|$)/g, (match) => {
+      if (/^\d+\.\d+/.test(match)) {
+        return '';
+      }
+      return match;
+    });
+
+    // 5. Remove caracteres especiais
+    return name.toLowerCase().replace(/[^a-z0-9]/g, '');
   }
 }
