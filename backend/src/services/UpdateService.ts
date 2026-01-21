@@ -196,10 +196,12 @@ export class UpdateService {
         });
         writer.on('error', (error: Error) => {
           console.error(`Erro ao escrever arquivo ${filename}: ${error}`);
+          writer.destroy();
           reject(error);
         });
         stream.on('error', (error: Error) => {
           console.error(`Erro no stream de download ${filename}: ${error}`);
+          writer.destroy();
           reject(error);
         });
       });
