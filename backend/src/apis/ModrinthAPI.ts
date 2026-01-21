@@ -1,6 +1,6 @@
-import axios, { AxiosInstance } from "axios";
+import axios, { AxiosInstance } from 'axios';
 
-const MODRINTH_API = "https://api.modrinth.com/v2";
+const MODRINTH_API = 'https://api.modrinth.com/v2';
 
 export class ModrinthAPI {
   private client: AxiosInstance;
@@ -14,11 +14,13 @@ export class ModrinthAPI {
 
   async searchMods(query: string, minecraftVersion: string, modLoader: string) {
     try {
-      const response = await this.client.get("/search", {
+      const response = await this.client.get('/search', {
         params: {
           query,
+          limit: 100,
+          offset: 0,
           facets: JSON.stringify([
-            ["project_type:mod"],
+            ['project_type:mod'],
             [`versions:${minecraftVersion}`],
             [`categories:${modLoader}`],
           ]),
@@ -40,11 +42,7 @@ export class ModrinthAPI {
     }
   }
 
-  async getVersions(
-    projectId: string,
-    minecraftVersion: string,
-    modLoader: string
-  ) {
+  async getVersions(projectId: string, minecraftVersion: string, modLoader: string) {
     try {
       const response = await this.client.get(`/project/${projectId}/version`, {
         params: {
@@ -62,7 +60,7 @@ export class ModrinthAPI {
   async downloadFile(url: string) {
     try {
       const response = await this.client.get(url, {
-        responseType: "stream",
+        responseType: 'stream',
       });
       return response.data;
     } catch (error) {
