@@ -12,25 +12,30 @@
 - MongoDB (opcional, habilita persistência e métricas)
 
 ## Instalação
+
 ```bash
 cd backend
 npm install
 ```
 
 ## Configuração
+
 Crie um arquivo `.env` (ou use variáveis de ambiente) com:
-```
+
+```bash
 PORT=3001
-MONGODB_URI=mongodb://admin:modcraft2026@localhost:27017/mods-craft?authSource=admin
+MONGODB_URI=mongodb://admin:change-me@localhost:27017/mods-craft?authSource=admin
 CURSEFORGE_API_KEY=... # opcional
 MODRINTH_LIMIT=200
 CURSEFORGE_LIMIT=200
 MINECRAFT_VERSION=1.20.1
 MOD_LOADER=fabric
 ```
+
 Se o MongoDB não estiver disponível, o sistema continua com JSON files.
 
 ## Scripts
+
 - `npm run dev` — inicia o servidor com ts-node-dev
 - `npm run build` — compila para `dist`
 - `npm run start` — roda build em produção
@@ -39,6 +44,7 @@ Se o MongoDB não estiver disponível, o sistema continua com JSON files.
 - `npm run auto-train` — roda treinamento automático com MongoDB
 
 ## Endpoints Principais
+
 - `POST /api/updates/start` — inicia atualização
 - `GET /api/updates/status` — status da atualização
 - `GET /api/logs` — últimos logs
@@ -50,6 +56,7 @@ Se o MongoDB não estiver disponível, o sistema continua com JSON files.
 - `POST /api/logs/save-daily-stats` — grava estatísticas diárias
 
 ## Estrutura de Pastas
+
 ```
 backend/
   src/
@@ -65,18 +72,21 @@ backend/
 ```
 
 ## Fluxo de Atualização (resumo)
-1) `POST /api/updates/start`
-2) `UpdateService` verifica versões (Modrinth/CurseForge)
-3) Faz download + backup + log
-4) Salva log no MongoDB (se disponível)
-5) Executa treinamento automático de padrões (auto-train)
+
+1. `POST /api/updates/start`
+2. `UpdateService` verifica versões (Modrinth/CurseForge)
+3. Faz download + backup + log
+4. Salva log no MongoDB (se disponível)
+5. Executa treinamento automático de padrões (auto-train)
 
 ## Treinamento Automático
+
 - Lê o último update log
 - Gera variações de nome para mods que falharam
 - Atualiza `SearchPattern` no MongoDB
 
 ## Desenvolvimento
+
 - Lint/format: `npm run lint` (se configurado) / `npm run format`
 - Testes: (não definidos) — adicionar conforme necessidade
 
