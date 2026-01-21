@@ -194,6 +194,7 @@ export class UpdateService {
       return new Promise((resolve, reject) => {
         writer.on('finish', () => resolve(true));
         writer.on('error', reject);
+        response.on('error', reject);
       });
     } catch (error) {
       console.error(`Erro ao baixar ${filename}: ${error}`);
