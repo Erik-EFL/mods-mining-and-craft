@@ -61,7 +61,7 @@ export class UpdateController {
 
       updateService.reset();
       const result = await updateService.updateAllMods();
-      const finalized = await updateService.finalize(`${modsFolder}_atualizados`);
+      await updateService.finalize(`${modsFolder}_atualizados`);
 
       const zipPath = await this.zipService.createModsZip(
         `${modsFolder}_atualizados`,

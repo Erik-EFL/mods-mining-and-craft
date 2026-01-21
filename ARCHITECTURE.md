@@ -383,7 +383,7 @@ Backend
     └──────────────────┬──────────────────┘
                        │
     ┌──────────────────▼──────────────────┐
-    │  DatabaseService.saveTrainingSexi()│
+    │  DatabaseService.saveTrainingSession()│
     │  DatabaseService.updateSearchPtns()│
     └──────────────────┬──────────────────┘
                        │
