@@ -16,7 +16,6 @@ export class ZipService {
   ): Promise<string> {
     return new Promise(async (resolve, reject) => {
       try {
-        // Verificar se pasta existe
         await fs.access(sourcePath);
 
         const zipFilePath = join(outputPath, zipFileName);
@@ -30,7 +29,7 @@ export class ZipService {
 
         output.on("close", () => {
           console.log(
-            `✅ ZIP criado: ${zipFilePath} (${archive.pointer()} bytes)`
+            `ZIP criado: ${zipFilePath} (${archive.pointer()} bytes)`
           );
           resolve(zipFilePath);
         });
@@ -45,7 +44,6 @@ export class ZipService {
 
         archive.pipe(output);
 
-        // Cria o ZIP
         archive.directory(sourcePath, false);
 
         await archive.finalize();
@@ -88,7 +86,7 @@ export class ZipService {
 
         output.on("close", () => {
           console.log(
-            `✅ ZIP completo criado: ${zipFilePath} (${archive.pointer()} bytes)`
+            `ZIP completo criado: ${zipFilePath} (${archive.pointer()} bytes)`
           );
           resolve(zipFilePath);
         });
@@ -103,7 +101,6 @@ export class ZipService {
 
         archive.pipe(output);
 
-        // Adicionar mods atualizados
         try {
           await fs.access(modsFolder);
           archive.directory(modsFolder, "mods-atualizados");
@@ -111,7 +108,6 @@ export class ZipService {
           console.warn("Pasta de mods atualizados não encontrada");
         }
 
-        // Adicionar backup
         try {
           await fs.access(backupFolder);
           archive.directory(backupFolder, "mods-backup");
@@ -119,7 +115,6 @@ export class ZipService {
           console.warn("Pasta de backup não encontrada");
         }
 
-        // Adicionar arquivo de log
         try {
           await fs.access(logFile);
           archive.file(logFile, { name: "relatorio.txt" });
