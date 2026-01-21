@@ -3,9 +3,7 @@ import mongoose from 'mongoose';
 
 dotenv.config();
 
-const MONGODB_URI =
-  process.env.MONGODB_URI ||
-  'mongodb://admin:modcraft2026@localhost:27017/mods-craft?authSource=admin';
+const MONGODB_URI = process.env.MONGODB_URI;
 
 /**
  * Conecta ao MongoDB
@@ -13,6 +11,10 @@ const MONGODB_URI =
 export async function connectMongoDB(): Promise<typeof mongoose> {
   try {
     console.log('Conectando ao MongoDB...');
+    if (!MONGODB_URI) {
+      console.error('MONGODB_URI não definida. Configure no .env ou variável de ambiente.');
+      process.exit(1);
+    }
 
     const connection = await mongoose.connect(MONGODB_URI, {
       connectTimeoutMS: 10000,
