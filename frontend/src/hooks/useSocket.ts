@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { io, Socket } from "socket.io-client";
+import { useEffect, useRef, useState } from 'react';
+import { io, Socket } from 'socket.io-client';
 
 export interface UpdateProgress {
   current: number;
@@ -15,23 +15,23 @@ export function useSocket() {
   const socketRef = useRef<Socket | null>(null);
 
   useEffect(() => {
-    const socket = io("http://localhost:3001", {
-      transports: ["websocket", "polling"],
+    const socket = io('http://localhost:3001', {
+      transports: ['websocket', 'polling'],
     });
 
     socketRef.current = socket;
 
-    socket.on("connect", () => {
-      console.log("🔌 Conectado ao servidor");
+    socket.on('connect', () => {
+      console.log('Conectado ao servidor');
       setConnected(true);
     });
 
-    socket.on("disconnect", () => {
-      console.log("🔌 Desconectado do servidor");
+    socket.on('disconnect', () => {
+      console.log('Desconectado do servidor');
       setConnected(false);
     });
 
-    socket.on("update-progress", (data: UpdateProgress) => {
+    socket.on('update-progress', (data: UpdateProgress) => {
       setProgress(data);
     });
 
@@ -42,7 +42,7 @@ export function useSocket() {
 
   const stopUpdate = () => {
     if (socketRef.current) {
-      socketRef.current.emit("stop-update");
+      socketRef.current.emit('stop-update');
     }
   };
 
